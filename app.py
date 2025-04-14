@@ -192,7 +192,7 @@ def main():
         with col1:
             example_id = "example1"
             example = EXAMPLES[example_id]
-            st.image(example["thumbnail"], use_column_width=True)
+            st.image(example["thumbnail"], use_container_width=True)
             st.write(f"**{example['name'][language]}**")
             st.write(example["description"][language])
             if st.button(t("analyze_button"), key=f"analyze_{example_id}"):
@@ -221,7 +221,7 @@ def main():
         with col2:
             example_id = "example2"
             example = EXAMPLES[example_id]
-            st.image(example["thumbnail"], use_column_width=True)
+            st.image(example["thumbnail"], use_container_width=True)
             st.write(f"**{example['name'][language]}**")
             st.write(example["description"][language])
             if st.button(t("analyze_button"), key=f"analyze_{example_id}"):
@@ -250,7 +250,7 @@ def main():
         with col3:
             example_id = "example3"
             example = EXAMPLES[example_id]
-            st.image(example["thumbnail"], use_column_width=True)
+            st.image(example["thumbnail"], use_container_width=True)
             st.write(f"**{example['name'][language]}**")
             st.write(example["description"][language])
             if st.button(t("analyze_button"), key=f"analyze_{example_id}"):

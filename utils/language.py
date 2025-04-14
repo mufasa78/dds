@@ -1,9 +1,15 @@
 from data.translations import TRANSLATIONS
 
-# Dictionary of supported languages
+# Available languages
 LANGUAGES = {
-    "en": {"english": "English", "native": "English"},
-    "zh": {"english": "Chinese", "native": "中文"}
+    'en': {
+        'name': 'English',
+        'native_name': 'English'
+    },
+    'zh': {
+        'name': 'Chinese',
+        'native_name': '中文'
+    }
 }
 
 def get_translation(language_code):
@@ -16,10 +22,11 @@ def get_translation(language_code):
     Returns:
         callable: A translation function
     """
-    # Default to English if language code not supported
+    # Default to English if the requested language doesn't exist
     if language_code not in LANGUAGES:
+        print(f"Warning: Language '{language_code}' not found, falling back to English")
         language_code = 'en'
-    
+        
     def translate(key):
         """
         Translate a key to the specified language
@@ -30,10 +37,18 @@ def get_translation(language_code):
         Returns:
             str: Translated text
         """
-        # Get translations for the language
-        translations = TRANSLATIONS.get(language_code, {})
+        # Check if the key exists in our translations dictionary
+        if key in TRANSLATIONS:
+            # Check if the requested language exists for this key
+            if language_code in TRANSLATIONS[key]:
+                return TRANSLATIONS[key][language_code]
+            # Fall back to English if the language doesn't exist
+            elif 'en' in TRANSLATIONS[key]:
+                print(f"Warning: No {language_code} translation for key '{key}', falling back to English")
+                return TRANSLATIONS[key]['en']
         
-        # Return the translation or the key if not found
-        return translations.get(key, TRANSLATIONS.get('en', {}).get(key, key))
+        # If the key doesn't exist, return the key itself as a fallback
+        print(f"Warning: No translation found for key '{key}'")
+        return key
     
     return translate

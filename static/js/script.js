@@ -8,6 +8,18 @@ $(document).ready(function() {
     $("#upload-form").on("submit", function(e) {
         e.preventDefault();
         
+        // Check if we're in example mode
+        const mode = $("#upload-mode").val();
+        if (mode === "example") {
+            // Process example video
+            const exampleId = $("#analyze-btn").data("example-id");
+            if (exampleId) {
+                analyzeExampleVideo(exampleId);
+                return;
+            }
+        }
+        
+        // Otherwise, process uploaded files
         const fileInput = $("#videos")[0];
         if (fileInput.files.length === 0) {
             alert("Please select at least one video file.");
@@ -85,17 +97,59 @@ $(document).ready(function() {
             }
             
             const confidence = Math.round(result.confidence);
+            
+            // Processing stats
+            let statsHtml = '';
+            if (result.stats) {
+                const stats = result.stats;
+                statsHtml = `
+                    <div class="mt-3 small text-muted">
+                        <div class="row">
+                            ${stats.processing_time ? `
+                                <div class="col-md-4">
+                                    <strong>Processing Time:</strong> ${stats.processing_time.toFixed(2)}s
+                                </div>
+                            ` : ''}
+                            
+                            ${stats.frames_sampled ? `
+                                <div class="col-md-4">
+                                    <strong>Frames Analyzed:</strong> ${stats.frames_sampled}
+                                </div>
+                            ` : ''}
+                            
+                            ${stats.sampling_strategy ? `
+                                <div class="col-md-4">
+                                    <strong>Sampling:</strong> ${stats.sampling_strategy}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            
             const resultItem = `
-                <div class="result-item ${statusClass}">
-                    <div>
-                        <h5>${filename}</h5>
-                        <p class="mb-1">${icon} ${result.prediction}</p>
-                        <div class="d-flex align-items-center">
-                            <span class="me-2">Confidence: ${confidence}%</span>
-                            <div class="confidence-gauge">
-                                <div class="confidence-level" style="width: ${confidence}%"></div>
+                <div class="result-item card mb-3 ${statusClass}">
+                    <div class="card-body">
+                        <h5 class="card-title">${filename}</h5>
+                        <div class="mb-3">
+                            <span class="badge ${result.prediction === "Real" ? "bg-success" : (result.prediction === "Fake" ? "bg-danger" : "bg-warning")} fs-6">
+                                ${icon} ${result.prediction}
+                            </span>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Confidence: ${confidence}%</label>
+                            <div class="progress">
+                                <div class="progress-bar ${result.prediction === "Real" ? "bg-success" : "bg-danger"}" 
+                                     role="progressbar" 
+                                     style="width: ${confidence}%" 
+                                     aria-valuenow="${confidence}" 
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    ${confidence}%
+                                </div>
                             </div>
                         </div>
+                        ${statsHtml}
                     </div>
                 </div>
             `;

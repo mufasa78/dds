@@ -12,7 +12,7 @@ class EfficientNetB4Detector(nn.Module):
         
         # Load pre-trained EfficientNet B4 model
         # Using standard torchvision model as a base
-        self.backbone = models.efficientnet_b4(pretrained=True)
+        self.backbone = models.efficientnet_b4(weights='IMAGENET1K_V1')
         
         # Replace the classifier
         in_features = self.backbone.classifier[1].in_features

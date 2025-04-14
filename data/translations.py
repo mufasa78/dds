@@ -10,6 +10,8 @@ TRANSLATIONS = {
         "processing_video": "Processing {file}...",
         "analysis_complete": "Analysis complete!",
         "results": "Results",
+        "supported_formats": "Supported formats: MP4, AVI, MOV",
+        "no_file_selected": "No file selected",
         
         # Prediction results
         "real": "Real",
@@ -41,6 +43,8 @@ TRANSLATIONS = {
         "processing_video": "正在处理 {file}...",
         "analysis_complete": "分析完成！",
         "results": "结果",
+        "supported_formats": "支持的格式：MP4, AVI, MOV",
+        "no_file_selected": "未选择文件",
         
         # Prediction results
         "real": "真实",

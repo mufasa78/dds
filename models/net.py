@@ -10,9 +10,9 @@ class EfficientNetB4Detector(nn.Module):
     def __init__(self, num_classes=1):
         super(EfficientNetB4Detector, self).__init__()
         
-        # Load pre-trained EfficientNet B4 model
+        # Load EfficientNet B4 model without pre-trained weights for stability
         # Using standard torchvision model as a base
-        self.backbone = models.efficientnet_b4(weights='IMAGENET1K_V1')
+        self.backbone = models.efficientnet_b4(weights=None)
         
         # Replace the classifier
         in_features = self.backbone.classifier[1].in_features
@@ -76,6 +76,9 @@ class MesoNet(nn.Module):
         self.bn4 = nn.BatchNorm2d(16)
         self.pool4 = nn.MaxPool2d(4, 4)
         
+        # Adaptive pooling to ensure consistent size regardless of input
+        self.adaptive_pool = nn.AdaptiveAvgPool2d((8, 8))
+        
         # Classifier
         self.fc1 = nn.Linear(16 * 8 * 8, 16)
         self.dropout = nn.Dropout(0.5)
@@ -94,6 +97,9 @@ class MesoNet(nn.Module):
         
         x = F.relu(self.bn4(self.conv4(x)))
         x = self.pool4(x)
+        
+        # Apply adaptive pooling to ensure correct size
+        x = self.adaptive_pool(x)
         
         # Flatten
         x = x.view(x.size(0), -1)

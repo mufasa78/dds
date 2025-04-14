@@ -6,7 +6,7 @@ import numpy as np
 import cv2
 from PIL import Image
 
-from models.net import EfficientNetB4Detector
+from models.net import EfficientNetB4Detector, MesoNet
 from models.face_detector import FaceDetector
 
 class DeepfakeDetector:
@@ -20,8 +20,14 @@ class DeepfakeDetector:
         """
         self.device = device
         
-        # Initialize the model
-        self.model = EfficientNetB4Detector()
+        # Initialize the model with a fallback option
+        try:
+            print("Attempting to use EfficientNetB4 model...")
+            self.model = EfficientNetB4Detector()
+        except Exception as e:
+            print(f"Failed to initialize EfficientNetB4: {e}")
+            print("Falling back to MesoNet model for better compatibility...")
+            self.model = MesoNet()
         
         # Define weights path
         weights_path = "models/weights/deepfake_model.pt"

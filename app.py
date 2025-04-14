@@ -285,7 +285,32 @@ def main():
         st.write(t("how_it_works_content"))
         
         # Add diagram of the detection process
-        st.image("./static/examples/detection_process.png", use_container_width=True)
+        process_diagram = """
+        <svg width="800" height="180" xmlns="http://www.w3.org/2000/svg">
+            <rect x="10" y="40" width="160" height="80" fill="#f0f8ff" stroke="#4682b4" stroke-width="2"/>
+            <text x="90" y="85" font-family="Arial" font-size="14" text-anchor="middle">Video Input</text>
+            
+            <polygon points="170,80 200,80 185,100" fill="#4682b4"/>
+            <line x1="170" y1="80" x2="200" y2="80" stroke="#4682b4" stroke-width="2"/>
+            
+            <rect x="200" y="40" width="160" height="80" fill="#f0fff0" stroke="#228b22" stroke-width="2"/>
+            <text x="280" y="85" font-family="Arial" font-size="14" text-anchor="middle">Frame Extraction</text>
+            
+            <polygon points="360,80 390,80 375,100" fill="#228b22"/>
+            <line x1="360" y1="80" x2="390" y2="80" stroke="#228b22" stroke-width="2"/>
+            
+            <rect x="390" y="40" width="160" height="80" fill="#fff0f5" stroke="#cd5c5c" stroke-width="2"/>
+            <text x="470" y="85" font-family="Arial" font-size="14" text-anchor="middle">Face Detection</text>
+            
+            <polygon points="550,80 580,80 565,100" fill="#cd5c5c"/>
+            <line x1="550" y1="80" x2="580" y2="80" stroke="#cd5c5c" stroke-width="2"/>
+            
+            <rect x="580" y="40" width="160" height="80" fill="#e6e6fa" stroke="#483d8b" stroke-width="2"/>
+            <text x="660" y="75" font-family="Arial" font-size="14" text-anchor="middle">Deepfake</text>
+            <text x="660" y="95" font-family="Arial" font-size="14" text-anchor="middle">Classification</text>
+        </svg>
+        """
+        st.markdown(process_diagram, unsafe_allow_html=True)
         
         # Disclaimer
         st.warning(t("disclaimer"))

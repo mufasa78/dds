@@ -285,7 +285,7 @@ def main():
         st.write(t("how_it_works_content"))
         
         # Add diagram of the detection process
-        st.image("https://via.placeholder.com/800x200?text=Detection+Process+Diagram", use_column_width=True)
+        st.image("./static/examples/detection_process.png", use_container_width=True)
         
         # Disclaimer
         st.warning(t("disclaimer"))

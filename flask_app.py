@@ -23,7 +23,10 @@ os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 # Global variables
 detector = None
 load_lock = threading.Lock()
-loading_message = "Loading detector model... This may take a few minutes."
+loading_messages = {
+    'en': "Loading detector model... This may take a few minutes.",
+    'zh': "正在加载检测模型...这可能需要几分钟时间。"
+}
 model_loaded = False
 
 def load_detector_in_background():
@@ -49,6 +52,9 @@ def index():
     # Get language from session or set default
     language = session.get('language', 'en')
     t = get_translation(language)
+    
+    # Get appropriate loading message based on language
+    loading_message = loading_messages.get(language, loading_messages['en'])
     
     # Check if model is loaded
     return render_template('index.html', 
@@ -119,4 +125,4 @@ def model_status():
     return jsonify({'loaded': model_loaded})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5001, debug=True)

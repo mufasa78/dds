@@ -1,0 +1,28 @@
+
+name: "SSD Face Detection"
+input: "data"
+input_shape {
+  dim: 1
+  dim: 3
+  dim: 300
+  dim: 300
+}
+layer {
+  name: "detection_out"
+  type: "DetectionOutput"
+  bottom: "fc7"
+  bottom: "data"
+  top: "detection_out"
+  detection_output_param {
+    num_classes: 2
+    share_location: true
+    background_label_id: 0
+    nms_param {
+      nms_threshold: 0.45
+    }
+    code_type: CENTER_SIZE
+    top_k: 400
+    keep_top_k: 200
+    confidence_threshold: 0.01
+  }
+}

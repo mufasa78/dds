@@ -31,28 +31,27 @@ class DeepfakeDetector:
         
         # If model path is provided, load weights
         if model_path and os.path.exists(model_path):
-            self.model.load_state_dict(torch.load(model_path, map_location=device))
-        elif os.path.exists(weights_path):
-            # Load from existing weights file
-            self.model.load_state_dict(torch.load(weights_path, map_location=device))
-        else:
-            # Use a pre-trained model from a more accessible source
             try:
-                import gdown
-                # Google Drive link to a similar EfficientNet model for deepfake detection
-                model_id = "1EBtVb5Jh8n9JbKknLYtVrNaG_4lUz-zw"
-                print(f"Downloading model weights from Google Drive...")
-                gdown.download(id=model_id, output=weights_path, quiet=False)
-                print("Download complete!")
-                
-                # Load the downloaded model
-                self.model.load_state_dict(torch.load(weights_path, map_location=device))
+                self.model.load_state_dict(torch.load(model_path, map_location=device))
+                print("Loaded model weights from provided path.")
             except Exception as e:
-                print(f"Error downloading model: {e}")
-                
-                # Initialize with random weights as fallback
-                print("Using randomly initialized weights. This is only for demonstration purposes.")
-                # No explicit loading of weights - model is already initialized with random weights
+                print(f"Error loading provided model weights: {e}")
+                print("Using randomly initialized weights for demonstration purposes.")
+        elif os.path.exists(weights_path):
+            try:
+                # Load from existing weights file
+                self.model.load_state_dict(torch.load(weights_path, map_location=device))
+                print("Loaded model weights from existing file.")
+            except Exception as e:
+                print(f"Error loading existing model weights: {e}")
+                print("Using randomly initialized weights for demonstration purposes.")
+        else:
+            print("No pre-trained weights found.")
+            print("Using randomly initialized weights for demonstration purposes.")
+            # No explicit loading of weights - model is already initialized with random weights
+        
+        # Note to users
+        print("Note: This is running with demonstration weights. For accurate detection, please train the model with real data.")
         
         # Set model to evaluation mode
         self.model.eval()

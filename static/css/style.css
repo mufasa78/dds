@@ -1,19 +1,92 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: #f8f9fa;
+    color: #333;
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+header {
+    padding: 20px 0;
+    border-bottom: 1px solid #eaeaea;
+    margin-bottom: 30px;
+}
+
+header h1 {
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 15px;
 }
 
 .card {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
     border: none;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+}
+
+.card-body {
+    padding: 25px;
 }
 
 .language-selector {
     margin-bottom: 20px;
 }
 
+.language-selector .btn {
+    margin-left: 5px;
+    border-radius: 20px;
+    padding: 5px 15px;
+    font-size: 0.9rem;
+}
+
+.nav-tabs {
+    border-bottom: 2px solid #e9ecef;
+    margin-bottom: 20px;
+}
+
+.nav-tabs .nav-link {
+    border: none;
+    color: #6c757d;
+    font-weight: 500;
+    padding: 10px 20px;
+    border-radius: 0;
+    margin-right: 5px;
+    transition: color 0.3s ease;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #007bff;
+    border: none;
+}
+
+.nav-tabs .nav-link.active {
+    color: #007bff;
+    background: none;
+    border: none;
+    border-bottom: 3px solid #007bff;
+}
+
 .progress {
     height: 20px;
+    border-radius: 10px;
+    background-color: #e9ecef;
+    margin: 10px 0;
+}
+
+.progress-bar {
+    border-radius: 10px;
 }
 
 #results-container {
@@ -22,34 +95,46 @@ body {
 
 .result-item {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 15px;
-    margin-bottom: 10px;
-    border-radius: 5px;
+    flex-direction: column;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 8px;
+    transition: transform 0.3s ease;
+}
+
+.result-item:hover {
+    transform: translateY(-3px);
 }
 
 .real {
-    background-color: rgba(40, 167, 69, 0.1);
+    background-color: rgba(40, 167, 69, 0.05);
     border-left: 5px solid #28a745;
 }
 
 .fake {
-    background-color: rgba(220, 53, 69, 0.1);
+    background-color: rgba(220, 53, 69, 0.05);
     border-left: 5px solid #dc3545;
 }
 
 .error {
-    background-color: rgba(255, 193, 7, 0.1);
+    background-color: rgba(255, 193, 7, 0.05);
     border-left: 5px solid #ffc107;
 }
 
+.badge {
+    padding: 8px 12px;
+    font-weight: 500;
+    border-radius: 20px;
+    margin-bottom: 10px;
+}
+
 .confidence-gauge {
-    width: 120px;
+    width: 100%;
     height: 20px;
     background-color: #e9ecef;
     border-radius: 10px;
     overflow: hidden;
+    margin-top: 10px;
 }
 
 .confidence-level {
@@ -58,8 +143,77 @@ body {
     border-radius: 10px;
 }
 
+.form-control {
+    border-radius: 8px;
+    padding: 12px;
+    border: 1px solid #ced4da;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 500;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.btn-primary:hover {
+    background-color: #0069d9;
+    border-color: #0062cc;
+    transform: translateY(-2px);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
 footer {
     margin-top: 50px;
     padding: 20px 0;
     border-top: 1px solid #dee2e6;
+    color: #6c757d;
+    text-align: center;
+}
+
+/* Example cards styling */
+.card img {
+    transition: transform 0.5s ease;
+    height: 200px;
+    object-fit: cover;
+}
+
+.card:hover img {
+    transform: scale(1.05);
+}
+
+/* Alert styling */
+.alert {
+    border-radius: 8px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+}
+
+/* Spinner styling */
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+    border-width: 0.25em;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-deck {
+        display: block;
+    }
+
+    .card {
+        margin-bottom: 20px;
+    }
 }

@@ -1,0 +1,178 @@
+/* Custom Streamlit styling */
+
+/* Main page styling */
+.main {
+    padding: 2rem;
+}
+
+/* Header styling */
+h1, h2, h3 {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+h1 {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+}
+
+h2 {
+    font-size: 1.8rem;
+    margin-top: 2rem;
+    margin-bottom: 1rem;
+}
+
+h3 {
+    font-size: 1.4rem;
+    margin-top: 1.5rem;
+    margin-bottom: 0.8rem;
+}
+
+/* Paragraph styling */
+p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    color: #333;
+}
+
+/* Card styling */
+.stCard {
+    border-radius: 10px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stCard:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* Button styling */
+.stButton > button {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.stButton > button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* File uploader styling */
+.stFileUploader > div {
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+/* Progress bar styling */
+.stProgress > div > div {
+    border-radius: 10px;
+    height: 20px;
+}
+
+/* Expander styling */
+.streamlit-expanderHeader {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+/* Tabs styling */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 2rem;
+}
+
+.stTabs [data-baseweb="tab"] {
+    height: 3rem;
+    white-space: pre-wrap;
+    border-radius: 4px 4px 0 0;
+}
+
+.stTabs [aria-selected="true"] {
+    background-color: rgba(0, 123, 255, 0.1);
+    font-weight: 600;
+}
+
+/* Success/Error message styling */
+.stSuccess, .stError {
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+}
+
+/* Footer styling */
+footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eaeaea;
+    text-align: center;
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .main {
+        padding: 1rem;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+    
+    h2 {
+        font-size: 1.5rem;
+    }
+}
+
+/* Custom classes for result cards */
+.real-result {
+    background-color: rgba(40, 167, 69, 0.05);
+    border-left: 5px solid #28a745;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+.fake-result {
+    background-color: rgba(220, 53, 69, 0.05);
+    border-left: 5px solid #dc3545;
+    padding: 1rem;
+    border-radius: 8px;
+}
+
+/* Custom diagram styling */
+.diagram-box {
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    height: 100px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    transition: transform 0.3s ease;
+}
+
+.diagram-box:hover {
+    transform: translateY(-5px);
+}
+
+/* Custom animation for loading */
+@keyframes pulse {
+    0% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+    100% {
+        opacity: 1;
+    }
+}
+
+.loading-animation {
+    animation: pulse 1.5s infinite;
+}

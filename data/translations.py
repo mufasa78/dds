@@ -9,6 +9,10 @@ TRANSLATIONS = {
         "en": "DeepFake Detection System",
         "zh": "伪造视频识别系统"
     },
+    "app_subtitle": {
+        "en": "Advanced AI-powered video analysis to detect manipulated content",
+        "zh": "由AI驱动的高级视频分析，用于检测经过操纵的内容"
+    },
     "app_description": {
         "en": "Upload a video to detect if it's a deepfake",
         "zh": "上传视频检测是否为AI伪造"
@@ -33,7 +37,7 @@ TRANSLATIONS = {
         "en": "Analysis Results",
         "zh": "分析结果"
     },
-    
+
     # Language selector
     "language_selector": {
         "en": "Language",
@@ -47,7 +51,7 @@ TRANSLATIONS = {
         "en": "Chinese",
         "zh": "中文"
     },
-    
+
     # Results
     "result_real": {
         "en": "Real Video",
@@ -73,7 +77,7 @@ TRANSLATIONS = {
         "en": "Frames Analyzed",
         "zh": "分析帧数"
     },
-    
+
     # Progress indicators
     "loading": {
         "en": "Loading...",
@@ -99,7 +103,7 @@ TRANSLATIONS = {
         "en": "Analyzing frames...",
         "zh": "分析帧内容..."
     },
-    
+
     # Errors
     "error_no_video": {
         "en": "Please select a video to analyze",
@@ -121,7 +125,7 @@ TRANSLATIONS = {
         "en": "No faces detected in the video. Please try a video with visible faces.",
         "zh": "视频中未检测到人脸。请尝试使用有可见人脸的视频。"
     },
-    
+
     # Other UI elements
     "about_title": {
         "en": "About",
@@ -142,5 +146,49 @@ TRANSLATIONS = {
     "disclaimer": {
         "en": "Disclaimer: This is a demonstration system and may not detect all types of deepfakes with perfect accuracy.",
         "zh": "免责声明：这是一个演示系统，可能无法以完美的准确度检测所有类型的深度伪造。"
+    },
+    "copyright_text": {
+        "en": "All rights reserved",
+        "zh": "版权所有"
+    },
+    "footer_text": {
+        "en": "Deepfake Detection System - Powered by AI",
+        "zh": "伪造视频识别系统 - 由人工智能驱动"
+    },
+    "supported_formats": {
+        "en": "Supported formats: MP4, AVI, MOV, MKV",
+        "zh": "支持的格式：MP4，AVI，MOV，MKV"
+    },
+    "select_example": {
+        "en": "Select Example",
+        "zh": "选择示例"
+    },
+    "examples_description": {
+        "en": "Try our pre-loaded examples to see how the system works",
+        "zh": "尝试我们的预加载示例，了解系统如何工作"
+    },
+    "model_info_title": {
+        "en": "Model Information",
+        "zh": "模型信息"
+    },
+    "model_info": {
+        "en": "This system uses a deep learning model based on EfficientNet architecture, trained on a large dataset of real and fake videos.",
+        "zh": "该系统使用基于EfficientNet架构的深度学习模型，在大量真实和伪造视频数据集上进行训练。"
+    },
+    "datasets_title": {
+        "en": "Datasets Used",
+        "zh": "使用的数据集"
+    },
+    "datasets_used": {
+        "en": "The model was trained on a combination of <a href='#'>FaceForensics++</a>, <a href='#'>DeepFake Detection Challenge</a>, and custom datasets.",
+        "zh": "该模型在<a href='#'>FaceForensics++</a>、<a href='#'>深度伪造检测挑战</a>和自定义数据集的组合上进行了训练。"
+    },
+    "deepfake_detection_system": {
+        "en": "Deepfake Detection System",
+        "zh": "伪造视频识别系统"
+    },
+    "analysis_complete": {
+        "en": "Analysis Complete",
+        "zh": "分析完成"
     }
 }

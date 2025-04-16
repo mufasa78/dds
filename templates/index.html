@@ -6,17 +6,31 @@
     <title>{{ t('deepfake_detection_system') }}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-5">
         <header class="mb-4">
-            <h1 class="text-center">{{ t('deepfake_detection_system') }}</h1>
-            <div class="language-selector text-end">
-                {% for code, names in languages.items() %}
-                <a href="{{ url_for('set_language', language=code) }}" class="btn btn-sm {% if current_language == code %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                    {{ names.native }}
-                </a>
-                {% endfor %}
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="text-center text-md-start"><i class="fas fa-shield-alt me-2"></i>{{ t('deepfake_detection_system') }}</h1>
+                    <p class="lead text-muted">{{ t('app_subtitle') }}</p>
+                </div>
+                <div class="col-md-4">
+                    <div class="language-selector text-center text-md-end">
+                        {% for code, names in languages.items() %}
+                        <a href="{{ url_for('set_language', language=code) }}" class="btn btn-sm {% if current_language == code %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                            {{ names.native }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
         </header>
 
@@ -33,14 +47,14 @@
                         <button class="nav-link" id="about-tab" data-bs-toggle="tab" data-bs-target="#about-pane" type="button" role="tab" aria-controls="about-pane" aria-selected="false">{{ t('about_title') }}</button>
                     </li>
                 </ul>
-                
+
                 <div class="tab-content" id="myTabContent">
                     <!-- Upload tab -->
                     <div class="tab-pane fade show active" id="upload-pane" role="tabpanel" aria-labelledby="upload-tab">
                         <div class="card border-top-0 rounded-top-0">
                             <div class="card-body">
                                 <p class="lead">{{ t('app_description') }}</p>
-                                
+
                                 {% if not model_loaded %}
                                 <div class="alert alert-warning" id="model-loading">
                                     <div class="d-flex align-items-center">
@@ -49,7 +63,7 @@
                                     </div>
                                 </div>
                                 {% endif %}
-                                
+
                                 <form id="upload-form" class="mt-4">
                                     <input type="hidden" id="upload-mode" name="mode" value="upload">
                                     <div class="mb-3">
@@ -61,26 +75,26 @@
                                         {{ t('analyze_button') }}
                                     </button>
                                 </form>
-                                
+
                                 <div id="example-container" class="mt-4 d-none">
                                     <div class="alert alert-info">
                                         <h5 id="example-name"></h5>
                                         <p id="example-info"></p>
                                     </div>
                                 </div>
-                                
+
                                 <div id="progress" class="mt-3 d-none">
                                     <div class="progress">
                                         <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
                                     </div>
                                     <p class="text-center mt-2" id="progress-text">{{ t('processing') }}</p>
                                 </div>
-                                
+
                                 <div id="results-container" class="mt-4 d-none">
                                     <h3>{{ t('results_title') }}</h3>
                                     <div id="results" class="list-group"></div>
                                 </div>
-                                
+
                                 <div id="example-loading" class="mt-3 d-none">
                                     <div class="d-flex justify-content-center">
                                         <div class="spinner-border" role="status">
@@ -92,14 +106,14 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Examples tab -->
                     <div class="tab-pane fade" id="examples-pane" role="tabpanel" aria-labelledby="examples-tab">
                         <div class="card border-top-0 rounded-top-0">
                             <div class="card-body">
                                 <h3>{{ t('examples_title') }}</h3>
                                 <p>{{ t('examples_description') }}</p>
-                                
+
                                 <div class="row mt-4">
                                     <!-- Example 1 -->
                                     <div class="col-md-4 mb-4">
@@ -114,7 +128,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <!-- Example 2 -->
                                     <div class="col-md-4 mb-4">
                                         <div class="card h-100">
@@ -128,7 +142,7 @@
                                             </div>
                                         </div>
                                     </div>
-                                    
+
                                     <!-- Example 3 -->
                                     <div class="col-md-4 mb-4">
                                         <div class="card h-100">
@@ -146,24 +160,24 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- About tab -->
                     <div class="tab-pane fade" id="about-pane" role="tabpanel" aria-labelledby="about-tab">
                         <div class="card border-top-0 rounded-top-0">
                             <div class="card-body">
                                 <h3>{{ t('about_title') }}</h3>
                                 <p>{{ t('about_content') }}</p>
-                                
+
                                 <h4 class="mt-4">{{ t('how_it_works_title') }}</h4>
                                 <p>{{ t('how_it_works_content') }}</p>
-                                
+
                                 <div class="alert alert-warning mt-4">
                                     {{ t('disclaimer') }}
                                 </div>
-                                
+
                                 <h4 class="mt-4">{{ t('model_info_title') }}</h4>
                                 <p>{{ t('model_info') }}</p>
-                                
+
                                 <h4 class="mt-4">{{ t('datasets_title') }}</h4>
                                 <p>{{ t('datasets_used') | safe }}</p>
                             </div>
@@ -172,12 +186,17 @@
                 </div>
             </div>
         </div>
-        
+
         <footer class="text-center mt-5 text-muted">
-            <p>{{ t('footer_text') }}</p>
+            <div class="row">
+                <div class="col-md-12">
+                    <p><i class="fas fa-code me-2"></i>{{ t('footer_text') }}</p>
+                    <p class="small">{{ t('copyright_text') }} &copy; {{ '2025' }}</p>
+                </div>
+            </div>
         </footer>
     </div>
-    
+
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>

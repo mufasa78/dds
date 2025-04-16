@@ -1,17 +1,26 @@
 import os
 import time
 import tempfile
+import logging
 import streamlit as st
 import torch
 import cv2
 import numpy as np
 from PIL import Image
 from pathlib import Path
+import threading
 
 from models.detector import DeepfakeDetector
 from models.haar_face_detector import HaarCascadeFaceDetector
 from models.simple_model import SimpleDeepfakeDetector
 from utils.enhanced_video_processing import enhanced_process_video
+from utils.video_preprocessing import VideoPreprocessor
+from utils.batch_processing import BatchProcessor
+from utils.result_cache import ResultCache
+from utils.logging_system import LoggingSystem
+from utils.performance_monitor import PerformanceMonitor, time_function
+from utils.feedback_system import FeedbackSystem
+from utils.model_versioning import ModelVersionManager
 from utils.language import get_translation, LANGUAGES
 from data.examples import EXAMPLES
 
@@ -129,25 +138,69 @@ h1, h2, h3 {
 </div>
 """, unsafe_allow_html=True)
 
+# Initialize global systems
+logging_system = LoggingSystem()
+performance_monitor = PerformanceMonitor()
+feedback_system = FeedbackSystem()
+result_cache = ResultCache()
+model_version_manager = ModelVersionManager()
+video_preprocessor = VideoPreprocessor()
+
 @st.cache_resource
+@time_function("load_detector")
 def load_detector():
     """Load the deepfake detector model"""
+    logger = logging_system.app_logger
+    logger.info("Loading deepfake detector model")
+
     try:
-        # First try to load the regular model
-        st.info("Loading deepfake detection model...")
-        detector = DeepfakeDetector(device='cpu')
-        st.success("✅ Model loaded successfully")
+        # Check if we have a current model version
+        current_version = model_version_manager.current_version
+        if current_version:
+            model_path = model_version_manager.get_model_path()
+            if model_path:
+                logger.info(f"Loading model version {current_version} from {model_path}")
+                st.info(f"Loading model version {current_version}...")
+
+                # Auto-detect device (will use GPU if available)
+                detector = DeepfakeDetector(device=None, model_path=model_path, model_version=current_version)
+
+                st.success(f"✅ Model version {current_version} loaded successfully on {detector.device}")
+                logger.info(f"Model loaded successfully on {detector.device}")
+                return detector
+
+        # If no version is set or model path not found, load default model
+        logger.info("Loading default model")
+        st.info("Loading default deepfake detection model...")
+
+        # Auto-detect device (will use GPU if available)
+        detector = DeepfakeDetector(device=None)
+
+        device_info = "GPU" if detector.device == "cuda" else "CPU"
+        st.success(f"✅ Model loaded successfully on {device_info}")
+        logger.info(f"Default model loaded successfully on {device_info}")
         return detector
+
     except Exception as e:
+        logger.error(f"Failed to load EfficientNet model: {e}")
         st.warning(f"Failed to load EfficientNet model: {e}")
+
         try:
             # Fallback to simple model
+            logger.info("Attempting to load simple model")
             st.info("Loading simple detection model...")
-            detector = SimpleDeepfakeDetector()
-            st.success("✅ Simple model loaded successfully")
+
+            model = SimpleDeepfakeDetector()
+            detector = DeepfakeDetector(device=None, custom_model=model)
+
+            device_info = "GPU" if detector.device == "cuda" else "CPU"
+            st.success(f"✅ Simple model loaded successfully on {device_info}")
+            logger.info(f"Simple model loaded successfully on {device_info}")
             return detector
-        except Exception as e:
-            st.error(f"Failed to load any model: {e}")
+
+        except Exception as e2:
+            logger.error(f"Failed to load any model: {e2}")
+            st.error(f"Failed to load any model: {e2}")
             return None
 
 @st.cache_resource
@@ -279,10 +332,11 @@ def main():
     st.write(t("app_description"))
 
     # Create tabs
-    upload_tab, examples_tab, about_tab = st.tabs([
+    upload_tab, examples_tab, about_tab, performance_tab = st.tabs([
         t("upload_tab"),
         t("examples_tab"),
-        t("about_tab")
+        t("about_tab"),
+        t("performance_tab")
     ])
 
     # Upload tab
@@ -298,21 +352,130 @@ def main():
 
         # Analysis options
         with st.expander(t("advanced_options"), expanded=False):
-            col1, col2 = st.columns(2)
-            with col1:
-                frames_to_sample = st.slider(
-                    t("frames_to_sample"),
-                    min_value=5,
-                    max_value=50,
-                    value=20,
-                    step=5
+            # Create tabs for different option categories
+            sampling_tab, preprocessing_tab, performance_tab = st.tabs([
+                t("sampling_options"),
+                t("preprocessing_options"),
+                t("performance_options")
+            ])
+
+            # Sampling options
+            with sampling_tab:
+                col1, col2 = st.columns(2)
+                with col1:
+                    frames_to_sample = st.slider(
+                        t("frames_to_sample"),
+                        min_value=5,
+                        max_value=50,
+                        value=20,
+                        step=5
+                    )
+                with col2:
+                    sampling_strategy = st.selectbox(
+                        t("sampling_strategy"),
+                        options=["uniform", "random", "first_frames"],
+                        format_func=lambda x: t(f"strategy_{x}")
+                    )
+
+            # Preprocessing options
+            with preprocessing_tab:
+                st.write(t("preprocessing_description"))
+
+                # Preprocessing methods
+                preprocessing_methods = st.multiselect(
+                    t("select_preprocessing"),
+                    options=["denoise", "enhance_contrast", "sharpen", "normalize", "grayscale"],
+                    format_func=lambda x: t(f"preprocess_{x}")
                 )
-            with col2:
-                sampling_strategy = st.selectbox(
-                    t("sampling_strategy"),
-                    options=["uniform", "random", "first_frames"],
-                    format_func=lambda x: t(f"strategy_{x}")
+
+                # Store in session state
+                st.session_state['preprocessing_methods'] = preprocessing_methods
+
+                # Method-specific parameters
+                if preprocessing_methods:
+                    st.subheader(t("preprocessing_params"))
+
+                    # Initialize params dict
+                    preprocessing_params = {}
+
+                    # Denoise parameters
+                    if "denoise" in preprocessing_methods:
+                        st.write(t("denoise_params"))
+                        denoise_strength = st.slider(
+                            t("denoise_strength"),
+                            min_value=1,
+                            max_value=30,
+                            value=10
+                        )
+                        preprocessing_params["denoise"] = {"strength": denoise_strength}
+
+                    # Contrast enhancement parameters
+                    if "enhance_contrast" in preprocessing_methods:
+                        st.write(t("contrast_params"))
+                        contrast_limit = st.slider(
+                            t("contrast_limit"),
+                            min_value=1.0,
+                            max_value=5.0,
+                            value=2.0,
+                            step=0.1
+                        )
+                        preprocessing_params["enhance_contrast"] = {"clip_limit": contrast_limit}
+
+                    # Sharpen parameters
+                    if "sharpen" in preprocessing_methods:
+                        st.write(t("sharpen_params"))
+                        sharpen_amount = st.slider(
+                            t("sharpen_amount"),
+                            min_value=0.1,
+                            max_value=3.0,
+                            value=1.0,
+                            step=0.1
+                        )
+                        preprocessing_params["sharpen"] = {"amount": sharpen_amount}
+
+                    # Store params in session state
+                    st.session_state['preprocessing_params'] = preprocessing_params
+
+            # Performance options
+            with performance_tab:
+                st.write(t("performance_description"))
+
+                # Enable GPU acceleration
+                use_gpu = st.checkbox(
+                    t("use_gpu"),
+                    value=torch.cuda.is_available(),
+                    disabled=not torch.cuda.is_available()
                 )
+
+                if not torch.cuda.is_available() and use_gpu:
+                    st.warning(t("gpu_not_available"))
+
+                # Enable result caching
+                use_cache = st.checkbox(
+                    t("use_cache"),
+                    value=True
+                )
+
+                # Cache settings if enabled
+                if use_cache:
+                    cache_expiration = st.slider(
+                        t("cache_expiration"),
+                        min_value=1,
+                        max_value=30,
+                        value=7,
+                        help=t("cache_expiration_help")
+                    )
+
+                    # Clear cache button
+                    if st.button(t("clear_cache")):
+                        result_cache.clear()
+                        st.success(t("cache_cleared"))
+
+                # Store in session state
+                st.session_state['use_gpu'] = use_gpu
+                st.session_state['use_cache'] = use_cache
+                if use_cache:
+                    st.session_state['cache_expiration'] = cache_expiration
 
         # Process button
         if uploaded_files:
@@ -332,13 +495,49 @@ def main():
                         video_path = tmp_file.name
 
                     try:
-                        # Process the video
-                        result, confidence, stats = enhanced_process_video(
-                            video_path,
-                            detector,
-                            frames_to_sample=frames_to_sample,
-                            sampling_strategy=sampling_strategy
-                        )
+                        # Check if result is in cache
+                        cache_key = f"{video_path}_{frames_to_sample}_{sampling_strategy}"
+                        cached_result = result_cache.get(video_path, {
+                            'frames_to_sample': frames_to_sample,
+                            'sampling_strategy': sampling_strategy
+                        })
+
+                        if cached_result:
+                            logging_system.log_app(logging.INFO, f"Using cached result for {uploaded_file.name}")
+                            result = cached_result['prediction']
+                            confidence = cached_result['confidence']
+                            stats = cached_result['stats']
+                            stats['from_cache'] = True
+                        else:
+                            # Apply preprocessing if selected
+                            preprocessing_methods = st.session_state.get('preprocessing_methods', [])
+                            if preprocessing_methods:
+                                logging_system.log_app(logging.INFO, f"Applying preprocessing to {uploaded_file.name}: {preprocessing_methods}")
+                                with st.spinner(f"Preprocessing video with {', '.join(preprocessing_methods)}..."):
+                                    video_path = video_preprocessor.preprocess_video(
+                                        video_path,
+                                        methods=preprocessing_methods,
+                                        params=st.session_state.get('preprocessing_params', {})
+                                    )
+
+                            # Process the video with performance monitoring
+                            with performance_monitor.time_operation("process_video"):
+                                result, confidence, stats = enhanced_process_video(
+                                    video_path,
+                                    detector,
+                                    frames_to_sample=frames_to_sample,
+                                    sampling_strategy=sampling_strategy
+                                )
+
+                            # Cache the result
+                            result_cache.set(video_path, {
+                                'prediction': result,
+                                'confidence': confidence,
+                                'stats': stats
+                            }, {
+                                'frames_to_sample': frames_to_sample,
+                                'sampling_strategy': sampling_strategy
+                            })
 
                         # Store results
                         results[uploaded_file.name] = {
@@ -346,11 +545,31 @@ def main():
                             'confidence': confidence,
                             'stats': stats
                         }
+
+                        # Log the result
+                        logging_system.log_app(
+                            logging.INFO,
+                            f"Processed {uploaded_file.name}: {result} ({confidence:.2f}%)",
+                            video_name=uploaded_file.name,
+                            result=result,
+                            confidence=confidence
+                        )
+
                     except Exception as e:
+                        error_msg = str(e)
                         results[uploaded_file.name] = {
                             'prediction': t("error_processing"),
-                            'error': str(e)
+                            'error': error_msg
                         }
+
+                        # Log the error
+                        logging_system.log_error(
+                            e,
+                            {
+                                "video_name": uploaded_file.name,
+                                "operation": "process_video"
+                            }
+                        )
 
                     # Clean up temp file
                     try:
@@ -364,6 +583,20 @@ def main():
 
                 # Display results with enhanced styling
                 status_text.text(t("analysis_complete"))
+
+                # Log completion
+                logging_system.log_app(
+                    logging.INFO,
+                    f"Analysis complete for {len(uploaded_files)} files",
+                    file_count=len(uploaded_files)
+                )
+
+                # Update model performance metrics
+                if detector:
+                    performance_monitor.record_model_performance(
+                        detector.model_info.get("model_type", "unknown"),
+                        detector.get_performance_metrics()
+                    )
 
                 st.markdown(f"<h2 style='text-align: center; margin-top: 2rem;'>{t('results_title')}</h2>", unsafe_allow_html=True)
 
@@ -408,6 +641,67 @@ def main():
                                 if 'sampling_strategy' in stats:
                                     with metric_cols[2]:
                                         st.metric(label="Sampling Strategy", value=stats['sampling_strategy'].replace('_', ' ').title())
+
+                                # Show if result was from cache
+                                if 'from_cache' in stats and stats['from_cache']:
+                                    st.info(t('result_from_cache'))
+
+                            # Add feedback section
+                            st.markdown("<h4 style='margin-top: 1.5rem;'>Feedback</h4>", unsafe_allow_html=True)
+                            st.write(t('feedback_prompt'))
+
+                            # Create columns for rating and feedback
+                            feedback_cols = st.columns([1, 3])
+
+                            with feedback_cols[0]:
+                                # Rating selection
+                                rating = st.select_slider(
+                                    t('rating_label'),
+                                    options=[1, 2, 3, 4, 5],
+                                    value=3,
+                                    format_func=lambda x: "⭐" * x
+                                )
+
+                            with feedback_cols[1]:
+                                # Feedback comment
+                                comment = st.text_area(t('feedback_comment'), key=f"feedback_{filename}")
+
+                            # Submit feedback button
+                            if st.button(t('submit_feedback'), key=f"submit_{filename}"):
+                                # Create metadata about the result
+                                metadata = {
+                                    "filename": filename,
+                                    "prediction": result['prediction'],
+                                    "confidence": float(result['confidence']) if 'confidence' in result else 0.0,
+                                    "processing_params": {
+                                        "frames_to_sample": frames_to_sample,
+                                        "sampling_strategy": sampling_strategy,
+                                        "preprocessing": st.session_state.get('preprocessing_methods', [])
+                                    }
+                                }
+
+                                # Submit feedback
+                                feedback_id = feedback_system.add_feedback(
+                                    "detection_result",
+                                    rating,
+                                    comment,
+                                    metadata
+                                )
+
+                                if feedback_id:
+                                    st.success(t('feedback_submitted'))
+
+                                    # Log feedback submission
+                                    logging_system.log_user_action(
+                                        "submit_feedback",
+                                        details={
+                                            "feedback_id": feedback_id,
+                                            "rating": rating,
+                                            "filename": filename
+                                        }
+                                    )
+                                else:
+                                    st.error(t('feedback_error'))
 
     # Examples tab with enhanced styling
     with examples_tab:
@@ -478,6 +772,96 @@ def main():
         display_example_card(col1, "example1")
         display_example_card(col2, "example2")
         display_example_card(col3, "example3")
+
+    # Performance tab
+    with performance_tab:
+        st.markdown(f"<h2 style='text-align: center;'>{t('performance_dashboard_title')}</h2>", unsafe_allow_html=True)
+
+        # System performance overview
+        st.subheader(t('system_performance'))
+
+        # Get performance summary
+        perf_summary = performance_monitor.get_performance_summary()
+
+        # Display system metrics
+        col1, col2, col3 = st.columns(3)
+
+        with col1:
+            st.metric(t('cpu_usage'), f"{perf_summary['system']['cpu_usage_avg']:.1f}%")
+
+        with col2:
+            st.metric(t('memory_usage'), f"{perf_summary['system']['memory_usage_avg']:.1f}%")
+
+        with col3:
+            st.metric(t('disk_usage'), f"{perf_summary['system']['disk_usage_avg']:.1f}%")
+
+        # Model performance
+        st.subheader(t('model_performance'))
+
+        if detector:
+            # Get model info
+            model_info = detector.get_model_info()
+            model_perf = detector.get_performance_metrics()
+
+            # Display model info
+            st.write(f"**{t('model_type')}:** {model_info.get('model_type', 'Unknown')}")
+            st.write(f"**{t('model_version')}:** {model_info.get('version', 'Unknown')}")
+            st.write(f"**{t('device')}:** {model_info.get('device', 'CPU')}")
+
+            # Display performance metrics
+            if model_perf and 'total_processed' in model_perf and model_perf['total_processed'] > 0:
+                st.write(f"**{t('total_processed')}:** {model_perf['total_processed']}")
+                st.write(f"**{t('avg_processing_time')}:** {model_perf['avg_time']:.4f}s")
+                st.write(f"**{t('fake_detections')}:** {model_perf['fake_count']}")
+                st.write(f"**{t('real_detections')}:** {model_perf['real_count']}")
+
+                # Create a pie chart for fake vs real
+                data = {
+                    'Category': [t('fake'), t('real')],
+                    'Count': [model_perf['fake_count'], model_perf['real_count']]
+                }
+
+                st.bar_chart(data, x='Category', y='Count')
+            else:
+                st.info(t('no_model_metrics'))
+        else:
+            st.warning(t('model_not_loaded'))
+
+        # Cache statistics
+        st.subheader(t('cache_statistics'))
+        cache_stats = result_cache.get_stats()
+
+        st.write(f"**{t('total_entries')}:** {cache_stats['total_entries']}")
+        st.write(f"**{t('cache_size')}:** {cache_stats['size_mb']:.2f} MB")
+        st.write(f"**{t('max_cache_size')}:** {cache_stats['max_size_mb']} MB")
+
+        # Clear cache button
+        if st.button(t('clear_cache'), key="clear_cache_perf"):
+            result_cache.clear()
+            st.success(t('cache_cleared'))
+
+        # Feedback statistics
+        st.subheader(t('feedback_statistics'))
+        feedback_stats = feedback_system.get_stats()
+
+        if 'overall' in feedback_stats and feedback_stats['overall']['count'] > 0:
+            st.write(f"**{t('total_feedback')}:** {feedback_stats['overall']['count']}")
+            st.write(f"**{t('avg_rating')}:** {feedback_stats['overall']['avg_rating']:.1f}/5.0")
+
+            # Display rating distribution
+            ratings = feedback_stats['overall']['ratings']
+            rating_data = {
+                'Rating': list(map(str, ratings.keys())),
+                'Count': list(ratings.values())
+            }
+
+            st.bar_chart(rating_data, x='Rating', y='Count')
+        else:
+            st.info(t('no_feedback'))
+
+        # Link to full dashboard
+        st.markdown("---")
+        st.markdown(f"<p style='text-align: center;'><a href='/performance' target='_self'>{t('view_full_dashboard')}</a></p>", unsafe_allow_html=True)
 
     # About tab with enhanced styling
     with about_tab:

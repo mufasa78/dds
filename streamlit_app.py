@@ -17,7 +17,7 @@ from data.examples import EXAMPLES
 
 # Set page configuration
 st.set_page_config(
-    page_title="Deepfake Detection System",
+    page_title="伪造视频识别系统 - Deepfake Detection System",
     page_icon="🔍",
     layout="wide",
     initial_sidebar_state="expanded"  # Changed to expanded to make language selector visible
@@ -162,6 +162,24 @@ def load_face_detector():
         st.error(f"Failed to load face detector: {e}")
         return None
 
+def ensure_translations(key, default_text):
+    """Ensure a translation key exists, if not, return the default text"""
+    from data.translations import TRANSLATIONS
+
+    # Check if the key exists in translations
+    if key not in TRANSLATIONS:
+        # Add warning in the console but don't show to user
+        print(f"Warning: Translation key '{key}' not found, using default text")
+        return default_text
+
+    # Check if Chinese translation exists
+    if 'zh' not in TRANSLATIONS[key]:
+        print(f"Warning: No Chinese translation for key '{key}', using default text")
+        return default_text
+
+    # Return the key for normal translation flow
+    return key
+
 def main():
     """Main function for the Streamlit app"""
     # Load detector model
@@ -171,49 +189,69 @@ def main():
     st.markdown("""
     <div style="background-color: #f8f9fa; padding: 10px; border-radius: 10px; margin-bottom: 20px;
               border: 2px solid #007BFF; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
-        <h3 style="text-align: center; margin-bottom: 10px; color: #007BFF;">🌐 Language Selection / 语言选择 / Selección de idioma</h3>
+        <h3 style="text-align: center; margin-bottom: 10px; color: #007BFF;">🌐 语言选择 / Language Selection / Selección de idioma</h3>
     </div>
     """, unsafe_allow_html=True)
 
-    # Create a row of language buttons for quick selection
+    # Create a row of language buttons for quick selection with Chinese highlighted by default
     lang_cols = st.columns(3)
 
     with lang_cols[0]:
-        en_button = st.button("English 🇺🇸", use_container_width=True)
+        en_button = st.button("English 🇺🇸", use_container_width=True, help="Switch to English")
     with lang_cols[1]:
-        zh_button = st.button("中文 🇨🇳", use_container_width=True)
+        # Use a different style for Chinese to highlight it as the default
+        zh_button = st.button(
+            "中文 🇨🇳",
+            use_container_width=True,
+            help="切换到中文",
+            type="primary"  # Highlight Chinese as the primary/default option
+        )
     with lang_cols[2]:
-        es_button = st.button("Español 🇪🇸", use_container_width=True)
+        es_button = st.button("Español 🇪🇸", use_container_width=True, help="Cambiar a Español")
 
     # Add language selector to sidebar with prominent styling
     with st.sidebar:
-        st.markdown("### 🌐 Language Settings")
+        st.markdown("### 🌐 语言设置 / Language Settings")
         st.markdown("""
         <div style="padding: 15px; background-color: #e6f3ff; border-radius: 10px; margin-bottom: 15px; border-left: 5px solid #007BFF;">
-            <p style="font-weight: bold; margin-bottom: 5px; color: #0056b3;">Select your preferred language:</p>
-            <p style="font-size: 0.9rem; color: #555;">选择您的首选语言 / Seleccione su idioma preferido</p>
+            <p style="font-weight: bold; margin-bottom: 5px; color: #0056b3;">选择您的首选语言:</p>
+            <p style="font-size: 0.9rem; color: #555;">Select your preferred language / Seleccione su idioma preferido</p>
         </div>
         """, unsafe_allow_html=True)
 
-        # Language selection in sidebar for better visibility
+        # Language selection in sidebar with Chinese as default
         sidebar_lang = st.selectbox(
-            "Language / 语言 / Idioma",
+            "语言 / Language / Idioma",
             options=list(LANGUAGES.keys()),
-            format_func=lambda x: LANGUAGES[x]["native"],
-            help="Select your preferred language / 选择您的首选语言 / Seleccione su idioma preferido"
+            index=1,  # Index 1 is 'zh' (Chinese)
+            format_func=lambda x: LANGUAGES[x]["native_name"],
+            help="选择您的首选语言 / Select your preferred language / Seleccione su idioma preferido"
         )
 
         # Add some space and a divider
         st.markdown("---")
 
     # Set language based on button clicks or sidebar selection
-    language = sidebar_lang
+    # Default to Chinese if no selection is made
+    language = sidebar_lang if sidebar_lang else "zh"
+
+    # Store the language selection in session state to persist between reruns
+    if 'language' not in st.session_state:
+        st.session_state['language'] = "zh"  # Default to Chinese
+
+    # Update language based on button clicks
     if en_button:
         language = "en"
+        st.session_state['language'] = "en"
     elif zh_button:
         language = "zh"
+        st.session_state['language'] = "zh"
     elif es_button:
         language = "es"
+        st.session_state['language'] = "es"
+    else:
+        # Use the stored language if no button was clicked
+        language = st.session_state['language']
 
     # Create columns for the main content
     col1, col2 = st.columns([3, 1])

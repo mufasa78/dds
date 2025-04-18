@@ -1,12 +1,18 @@
 import os
 import time
 import tempfile
+from flask import Flask  # Changed from 'from flask import app'
 import streamlit as st
 import torch
 import cv2
 import numpy as np
 from PIL import Image
 from pathlib import Path
+
+# Initialize Flask app
+flask_app = Flask(__name__)
+flask_app.config['UPLOAD_FOLDER'] = 'static/uploads'
+os.makedirs(flask_app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 from models.detector import DeepfakeDetector
 from models.haar_face_detector import HaarCascadeFaceDetector
@@ -105,6 +111,13 @@ def save_uploaded_file(uploaded_file):
         st.error(f"Error saving uploaded file: {e}")
         return None
 
+def save_analyzed_frame(frame, filename, index):
+    """Save an analyzed frame to the uploads directory"""
+    frame_filename = f"{os.path.splitext(filename)[0]}_frame_{index}.jpg"
+    frame_path = os.path.join(flask_app.config['UPLOAD_FOLDER'], frame_filename)
+    cv2.imwrite(frame_path, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+    return os.path.join('static/uploads', frame_filename)
+
 def main():
     # Generate example videos if needed
     with st.spinner("Initializing examples..."):
@@ -163,18 +176,29 @@ def main():
                     if temp_path:
                         try:
                             # Process the video with enhanced processing
-                            result, confidence, stats = enhanced_process_video(
+                            result, confidence, stats, analyzed_frames = enhanced_process_video(
                                 temp_path,
                                 detector,
                                 frames_to_sample=20,
                                 sampling_strategy='scene_change'
                             )
 
-                            # Store result with stats
+                            # Save analyzed frames and get their paths
+                            frame_paths = []
+                            for idx, (frame, is_fake, frame_confidence) in enumerate(analyzed_frames):
+                                frame_path = save_analyzed_frame(frame, uploaded_file.name, idx)
+                                frame_paths.append({
+                                    'path': frame_path,
+                                    'is_fake': is_fake,
+                                    'confidence': frame_confidence
+                                })
+
+                            # Store result with stats and frame paths
                             results[uploaded_file.name] = {
                                 'prediction': result,
                                 'confidence': confidence,
-                                'stats': stats
+                                'stats': stats,
+                                'frames': frame_paths
                             }
 
                             # Clean up temporary file
@@ -185,7 +209,8 @@ def main():
                             results[uploaded_file.name] = {
                                 'prediction': t("error_processing"),
                                 'confidence': 0.0,
-                                'stats': {'error': str(e)}
+                                'stats': {'error': str(e)},
+                                'frames': []
                             }
 
                     # Update progress
@@ -200,7 +225,7 @@ def main():
                     with st.expander(f"**{filename}**", expanded=True):
                         col1, col2 = st.columns([2, 1])
                         with col1:
-                            # Create a styled result card
+                            # Display result card
                             if result['prediction'] == t("error_processing"):
                                 st.error(t("error_processing"))
                             elif result['prediction'] == "Real":
@@ -218,25 +243,41 @@ def main():
                                 </div>
                                 """, unsafe_allow_html=True)
 
-                            # Display stats in a more visually appealing way
-                            if 'stats' in result and isinstance(result['stats'], dict) and result['prediction'] != t("error_processing"):
-                                stats = result['stats']
-                                st.markdown("<h4 style='margin-top: 1.5rem;'>Analysis Details</h4>", unsafe_allow_html=True)
+                        # Display analyzed frames in a grid
+                        st.markdown("### Analyzed Frames")
+                        if result['frames']:
+                            cols = st.columns(4)  # Display 4 frames per row
+                            for idx, frame_info in enumerate(result['frames']):
+                                with cols[idx % 4]:
+                                    st.image(frame_info['path'])
+                                    label_color = "red" if frame_info['is_fake'] else "green"
+                                    st.markdown(f"""
+                                        <p style='text-align: center; color: {label_color}; margin: 0;'>
+                                            <strong>{'FAKE' if frame_info['is_fake'] else 'REAL'}</strong><br>
+                                            {frame_info['confidence']:.1f}% confidence
+                                        </p>
+                                    """, unsafe_allow_html=True)
 
-                                # Create a metrics display
-                                metric_cols = st.columns(3)
-
-                                if 'processing_time' in stats:
-                                    with metric_cols[0]:
-                                        st.metric(label=t('processing_time'), value=f"{stats['processing_time']:.2f}s")
-
-                                if 'frames_sampled' in stats:
-                                    with metric_cols[1]:
-                                        st.metric(label=t('frames_analyzed'), value=stats['frames_sampled'])
-
-                                if 'sampling_strategy' in stats:
-                                    with metric_cols[2]:
-                                        st.metric(label="Sampling Strategy", value=stats['sampling_strategy'].replace('_', ' ').title())
+                        # Display stats
+                        if 'stats' in result and isinstance(result['stats'], dict):
+                            st.markdown("### Analysis Details")
+                            metric_cols = st.columns(4)
+                            
+                            with metric_cols[0]:
+                                st.metric(label=t('processing_time'), 
+                                        value=f"{result['stats'].get('processing_time', 0)::.2f}s")
+                            
+                            with metric_cols[1]:
+                                st.metric(label=t('frames_analyzed'), 
+                                        value=result['stats'].get('frames_sampled', 0))
+                            
+                            with metric_cols[2]:
+                                st.metric(label="Fake Frames", 
+                                        value=f"{result['stats'].get('fake_frame_count', 0)}/{result['stats'].get('frame_count', 0)}")
+                            
+                            with metric_cols[3]:
+                                st.metric(label="Fake Frame %", 
+                                        value=f"{result['stats'].get('fake_frame_percentage', 0):.1f}%")
 
     # Examples tab with enhanced styling
     with examples_tab:

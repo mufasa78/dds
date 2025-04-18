@@ -56,7 +56,7 @@ def load_detector_in_background():
                     print(f"Failed to load simplified model: {e2}")
                     # Use fallback detector as last resort
                     detector = DeepfakeDetector(device='cpu', use_fallback=True)
-            
+
             # Load face detector
             try:
                 face_detector = HaarCascadeFaceDetector()
@@ -65,7 +65,7 @@ def load_detector_in_background():
                 # Use simple face detector as fallback
                 from models.face_detector import FaceDetector
                 face_detector = FaceDetector()
-            
+
             model_loaded = True
 
 # Start loading the model in background
@@ -83,13 +83,13 @@ def index():
     # Get language from session or set default
     language = session.get('language', 'en')
     t = get_translation(language)
-    
+
     # Get appropriate loading message based on language
     loading_message = loading_messages.get(language, loading_messages['en'])
-    
+
     # Check if model is loaded
-    return render_template('index.html', 
-                          languages=LANGUAGES, 
+    return render_template('index.html',
+                          languages=LANGUAGES,
                           current_language=language,
                           model_loaded=model_loaded,
                           loading_message=loading_message,
@@ -103,63 +103,90 @@ def set_language(language):
 @app.route('/upload', methods=['POST'])
 def upload():
     global detector
-    
+
     # Check if model is loaded
     if not model_loaded:
         return jsonify({'error': 'Model is still loading, please wait and try again.'}), 400
-    
+
     # Get language for translations
     language = session.get('language', 'en')
     t = get_translation(language)
-    
+
     # Check if files were uploaded
     if 'videos' not in request.files:
         return jsonify({'error': t('no_file_selected')}), 400
-    
+
     files = request.files.getlist('videos')
-    
+
     # Check if any file was selected
     if not files or files[0].filename == '':
         return jsonify({'error': t('no_file_selected')}), 400
-    
+
     results = {}
-    
+
+    # Create directory for frame images if it doesn't exist
+    frames_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'frames')
+    os.makedirs(frames_dir, exist_ok=True)
+
     # Process each uploaded file
     for file in files:
         try:
             # Save uploaded file
             temp_path = save_uploaded_file(file)
-            
+
             # Process the video with enhanced processing
-            result, confidence, stats = enhanced_process_video(
-                temp_path, 
-                detector, 
+            result, confidence, stats, analyzed_frames = enhanced_process_video(
+                temp_path,
+                detector,
                 frames_to_sample=20,
-                sampling_strategy='scene_change'
+                sampling_strategy='scene_change',
+                face_detector=face_detector
             )
-            
-            # Store result with stats
+
+            # Save analyzed frames
+            frame_results = []
+            for idx, (frame, is_fake, frame_confidence) in enumerate(analyzed_frames):
+                # Generate unique filename for the frame
+                frame_filename = f"{os.path.splitext(file.filename)[0]}_frame_{idx}.jpg"
+                frame_path = os.path.join(frames_dir, frame_filename)
+
+                # Save the frame
+                cv2.imwrite(frame_path, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+
+                # Add frame info to results
+                frame_results.append({
+                    'path': os.path.join('static/uploads/frames', frame_filename),
+                    'is_fake': is_fake,
+                    'confidence': frame_confidence
+                })
+
+            # Store results with frame information
             results[file.filename] = {
                 'prediction': result,
                 'confidence': confidence,
                 'stats': {
                     'processing_time': stats.get('processing_time', 0),
                     'frames_sampled': stats.get('frames_sampled', 0),
-                    'sampling_strategy': stats.get('sampling_strategy', 'unknown')
-                }
+                    'sampling_strategy': stats.get('sampling_strategy', 'unknown'),
+                    'fake_frame_percentage': stats.get('fake_frame_percentage', 0),
+                    'frame_count': stats.get('frame_count', 0),
+                    'fake_frame_count': stats.get('fake_frame_count', 0)
+                },
+                'frames': frame_results
             }
-            
+
             # Remove temp file
             if os.path.exists(temp_path):
                 os.remove(temp_path)
-                
+
         except Exception as e:
             results[file.filename] = {
                 'prediction': f"Error: {str(e)}",
                 'confidence': 0.0,
-                'stats': {'error': str(e)}
+                'stats': {'error': str(e)},
+                'frames': []
             }
-    
+
     return jsonify({'results': results})
 
 @app.route('/api/model_status')
@@ -170,17 +197,17 @@ def model_status():
 def get_example():
     """Get example video information"""
     example_id = request.args.get('id')
-    
+
     # Check if the example exists
     if example_id not in EXAMPLES:
         return jsonify({'status': 'error', 'error': 'Example not found'}), 404
-    
+
     # Get language from session
     language = session.get('language', 'en')
-    
+
     # Get example data
     example = EXAMPLES[example_id]
-    
+
     # Return example data with proper translation
     return jsonify({
         'status': 'success',
@@ -196,34 +223,55 @@ def get_example():
 def analyze_example():
     """Analyze an example video"""
     global detector
-    
+
     # Check if model is loaded
     if not model_loaded:
         return jsonify({'status': 'error', 'error': 'Model is still loading, please wait and try again.'}), 400
-    
+
     # Get example ID from request
     example_id = request.form.get('id')
-    
+
     # Check if the example exists
     if example_id not in EXAMPLES:
         return jsonify({'status': 'error', 'error': 'Example not found'}), 404
-    
+
     # Get example data
     example = EXAMPLES[example_id]
-    
+
     # Check if the example file exists
     if not os.path.exists(example['path']):
         return jsonify({'status': 'error', 'error': 'Example file not found'}), 404
-    
+
     try:
         # Process the video
-        result, confidence, stats = enhanced_process_video(
-            example['path'], 
+        result, confidence, stats, analyzed_frames = enhanced_process_video(
+            example['path'],
             detector,
             frames_to_sample=20,
-            sampling_strategy='uniform'
+            sampling_strategy='uniform',
+            face_detector=face_detector
         )
-        
+
+        # Save analyzed frames
+        frames_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'frames')
+        os.makedirs(frames_dir, exist_ok=True)
+
+        frame_results = []
+        for idx, (frame, is_fake, frame_confidence) in enumerate(analyzed_frames):
+            # Generate unique filename for the frame
+            frame_filename = f"example_{example_id}_frame_{idx}.jpg"
+            frame_path = os.path.join(frames_dir, frame_filename)
+
+            # Save the frame
+            cv2.imwrite(frame_path, cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+
+            # Add frame info to results
+            frame_results.append({
+                'path': os.path.join('static/uploads/frames', frame_filename),
+                'is_fake': is_fake,
+                'confidence': frame_confidence
+            })
+
         # Return results
         return jsonify({
             'status': 'success',
@@ -233,8 +281,12 @@ def analyze_example():
                 'stats': {
                     'processing_time': stats.get('processing_time', 0),
                     'frames_sampled': stats.get('frames_sampled', 0),
-                    'sampling_strategy': stats.get('sampling_strategy', 'uniform')
-                }
+                    'sampling_strategy': stats.get('sampling_strategy', 'uniform'),
+                    'fake_frame_percentage': stats.get('fake_frame_percentage', 0),
+                    'frame_count': stats.get('frame_count', 0),
+                    'fake_frame_count': stats.get('fake_frame_count', 0)
+                },
+                'frames': frame_results
             }
         })
     except Exception as e:

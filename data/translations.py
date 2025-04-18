@@ -190,5 +190,37 @@ TRANSLATIONS = {
     "analysis_complete": {
         "en": "Analysis Complete",
         "zh": "分析完成"
+    },
+    "frame_analysis": {
+        "en": "Frame Analysis",
+        "zh": "帧分析"
+    },
+    "detection_points": {
+        "en": "Detection Points",
+        "zh": "检测点"
+    },
+    "example1_title": {
+        "en": "Deepfake Example",
+        "zh": "伪造视频示例"
+    },
+    "example1_description": {
+        "en": "A synthetic video created using AI",
+        "zh": "使用人工智能创建的合成视频"
+    },
+    "example2_title": {
+        "en": "Real Video",
+        "zh": "真实视频"
+    },
+    "example2_description": {
+        "en": "An authentic video with no manipulation",
+        "zh": "没有操纵的真实视频"
+    },
+    "example3_title": {
+        "en": "Mixed Content",
+        "zh": "混合内容"
+    },
+    "example3_description": {
+        "en": "Video with both real and manipulated segments",
+        "zh": "包含真实和操纵片段的视频"
     }
 }

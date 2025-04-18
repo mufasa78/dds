@@ -207,6 +207,87 @@ footer {
     border-width: 0.25em;
 }
 
+/* Frame analysis styling */
+#frame-analysis {
+    margin-top: 30px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+}
+
+.frames-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.frame-item {
+    position: relative;
+    transition: transform 0.3s ease;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.frame-item:hover {
+    transform: scale(1.05);
+    z-index: 10;
+}
+
+.frame-container {
+    position: relative;
+    border: 4px solid transparent;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.frame-container.fake {
+    border-color: #dc3545;
+}
+
+.frame-container.real {
+    border-color: #28a745;
+}
+
+.frame-container img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.frame-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.7);
+    padding: 8px;
+    color: white;
+    text-align: center;
+}
+
+.frame-label {
+    font-weight: bold;
+    display: block;
+    font-size: 14px;
+}
+
+.fake-label {
+    color: #ff4444;
+}
+
+.real-label {
+    color: #00C851;
+}
+
+.confidence-score {
+    font-size: 12px;
+    opacity: 0.9;
+    display: block;
+    margin-top: 2px;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .card-deck {
@@ -215,5 +296,9 @@ footer {
 
     .card {
         margin-bottom: 20px;
+    }
+
+    .frames-grid {
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
     }
 }
